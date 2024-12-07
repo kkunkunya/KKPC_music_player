@@ -294,7 +294,7 @@ namespace WpfApp3
                         Debug.WriteLine($"- 类型: {picture.Type}");
                         Debug.WriteLine($"- MIME类型: {picture.MimeType}");
                         Debug.WriteLine($"- 描述: {picture.Description}");
-                        Debug.WriteLine($"- 数据大��: {picture.Data?.Data?.Length ?? 0} bytes");
+                        Debug.WriteLine($"- 数据大小: {picture.Data?.Data?.Length ?? 0} bytes");
                         
                         if (picture.Data?.Data != null)
                         {
@@ -373,7 +373,7 @@ namespace WpfApp3
         {
             try
             {
-                Debug.WriteLine("正在加载默认封面图片...");
+                Debug.WriteLine("正在加载默认封面���片...");
                 BitmapImage defaultArt = new BitmapImage();
                 defaultArt.BeginInit();
                 defaultArt.UriSource = new Uri("pack://application:,,,/Resources/default_album_art.png");
@@ -634,7 +634,7 @@ namespace WpfApp3
                 Debug.WriteLine($"异常堆栈: {ex.StackTrace}");
                 LyricsItemsControl.ItemsSource = new List<LyricLine> 
                 { 
-                    new LyricLine("歌���加载失败", TimeSpan.Zero) 
+                    new LyricLine("歌词加载失败", TimeSpan.Zero) 
                 };
             }
         }
@@ -775,16 +775,36 @@ namespace WpfApp3
 
         private void ScrollToCurrentLyric(LyricLine currentLyric)
         {
-            var index = lyricLines.IndexOf(currentLyric);
-            if (index >= 0)
+            try
             {
-                var container = LyricsItemsControl.ItemContainerGenerator
-                    .ContainerFromIndex(index) as FrameworkElement;
-                
-                if (container != null)
+                var index = lyricLines.IndexOf(currentLyric);
+                if (index >= 0)
                 {
-                    container.BringIntoView();
+                    // 等待布局更新完成后再计算滚动位置
+                    Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+                    {
+                        var container = LyricsItemsControl.ItemContainerGenerator
+                            .ContainerFromIndex(index) as FrameworkElement;
+
+                        if (container != null)
+                        {
+                            // 获取当前歌词项的位置和大小信息
+                            var transform = container.TransformToVisual(LyricsScrollViewer);
+                            var containerRect = transform.TransformBounds(new Rect(0, 0, container.ActualWidth, container.ActualHeight));
+
+                            // 计算目标滚动位置（使当前歌词位于滚动视图中央）
+                            double scrollTarget = containerRect.Y + LyricsScrollViewer.VerticalOffset - 
+                                (LyricsScrollViewer.ViewportHeight - container.ActualHeight) / 2;
+
+                            // 平滑滚动到目标位置
+                            LyricsScrollViewer.ScrollToVerticalOffset(scrollTarget);
+                        }
+                    }));
                 }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"ScrollToCurrentLyric error: {ex.Message}");
             }
         }
     }

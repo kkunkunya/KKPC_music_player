@@ -133,6 +133,12 @@
                               VerticalScrollBarVisibility="Auto" 
                               HorizontalScrollBarVisibility="Disabled">
                     <ItemsControl x:Name="LyricsItemsControl">
+                        <ItemsControl.Resources>
+                            <Style TargetType="ItemsControl">
+                                <Setter Property="Padding" Value="0,150"/>
+                            </Style>
+                        </ItemsControl.Resources>
+                        
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Margin="0,8">
@@ -148,6 +154,7 @@
                                              Foreground="{Binding TextColor}"
                                              TextAlignment="Center"
                                              TextWrapping="Wrap"
+                                             Visibility="{Binding Translation, Converter={StaticResource NullToVisibilityConverter}}"
                                              Margin="0,4,0,0"/>
                                 </StackPanel>
                             </DataTemplate>
