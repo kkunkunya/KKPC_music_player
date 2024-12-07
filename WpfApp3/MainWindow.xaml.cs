@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Threading;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Controls.Primitives;
 using System.IO;
 using System.Linq;
@@ -17,6 +18,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Globalization;
 using System.Windows.Data;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Collections.ObjectModel;
 
 namespace WpfApp3
 {
@@ -37,8 +41,9 @@ namespace WpfApp3
         private TagLib.File currentTagFile;
         private Dictionary<TimeSpan, string> lyrics = new Dictionary<TimeSpan, string>();
         private DispatcherTimer lyricsTimer;
-        private List<LyricLine> lyricLines = new List<LyricLine>();
+        private ObservableCollection<LyricLine> lyricLines = new ObservableCollection<LyricLine>();
         private LyricLine currentLyricLine;
+        private Dictionary<int, double> lyricPositions = new Dictionary<int, double>();
 
         public MainWindow()
         {
@@ -263,7 +268,7 @@ namespace WpfApp3
                 Debug.WriteLine($"文件路径: {filePath}");
                 Debug.WriteLine($"文件格式: {Path.GetExtension(filePath)}");
                 
-                // 创建 TagLib 文件对象前先检查文件是否存在和可访问
+                // 创建 TagLib 件对象前先检查文件是否存在和可访问
                 if (!System.IO.File.Exists(filePath))
                 {
                     Debug.WriteLine("错误: 文件不存在");
@@ -290,7 +295,7 @@ namespace WpfApp3
                     if (currentTagFile.Tag.Pictures.Length > 0)
                     {
                         var picture = currentTagFile.Tag.Pictures[0];
-                        Debug.WriteLine($"找到封面图片:");
+                        Debug.WriteLine($"到封面图片:");
                         Debug.WriteLine($"- 类型: {picture.Type}");
                         Debug.WriteLine($"- MIME类型: {picture.MimeType}");
                         Debug.WriteLine($"- 描述: {picture.Description}");
@@ -373,7 +378,7 @@ namespace WpfApp3
         {
             try
             {
-                Debug.WriteLine("正在加载默认封面���片...");
+                Debug.WriteLine("正在加载默认封面图片...");
                 BitmapImage defaultArt = new BitmapImage();
                 defaultArt.BeginInit();
                 defaultArt.UriSource = new Uri("pack://application:,,,/Resources/default_album_art.png");
@@ -443,6 +448,12 @@ namespace WpfApp3
                 }
                 PlaylistPopup.IsOpen = false;
                 PlaylistPopup.IsOpen = true;
+            }
+            
+            // 重新计算歌词位置
+            if (currentLyricLine != null)
+            {
+                ScrollToCurrentLyric(currentLyricLine);
             }
         }
 
@@ -530,14 +541,15 @@ namespace WpfApp3
         private void LoadLyrics(string musicFilePath)
         {
             lyrics.Clear();
-            lyricLines.Clear();
+            Dispatcher.Invoke(() => lyricLines.Clear());
             currentLyricLine = null;
             
             // 显示"正在加载歌词..."
-            LyricsItemsControl.ItemsSource = new List<LyricLine> 
-            { 
-                new LyricLine("正在加载歌词...", TimeSpan.Zero) 
-            };
+            Dispatcher.Invoke(() =>
+            {
+                lyricLines.Clear();
+                lyricLines.Add(new LyricLine("正在加载歌词...", TimeSpan.Zero));
+            });
             
             try 
             {
@@ -566,7 +578,7 @@ namespace WpfApp3
                     if (!string.IsNullOrEmpty(lyricsText))
                     {
                         Debug.WriteLine("开始解析歌词文本");
-                        // 按行分割歌词文本
+                        // 按行分歌词文本
                         string[] lines = lyricsText.Split(new[] { "\r\n", "\r", "\n" }, 
                             StringSplitOptions.RemoveEmptyEntries);
                         
@@ -581,10 +593,11 @@ namespace WpfApp3
                         {
                             Debug.WriteLine("未能解析出有效歌词行");
                             // 更新为使用ItemsControl
-                            LyricsItemsControl.ItemsSource = new List<LyricLine> 
-                            { 
-                                new LyricLine("歌词格式不支持", TimeSpan.Zero) 
-                            };
+                            Dispatcher.Invoke(() =>
+                            {
+                                lyricLines.Clear();
+                                lyricLines.Add(new LyricLine("歌词格式不支持", TimeSpan.Zero));
+                            });
                         }
                     }
                     else
@@ -597,33 +610,36 @@ namespace WpfApp3
                             ProcessLyricLines(lines);
                             if (lyrics.Count > 0)
                             {
-                                Debug.WriteLine($"从外部LRC文件加载了 {lyrics.Count} 行歌词");
+                                Debug.WriteLine($"从部LRC文件加载了 {lyrics.Count} 行歌词");
                                 UpdateLyricsDisplay();
                             }
                             else
                             {
-                                LyricsItemsControl.ItemsSource = new List<LyricLine> 
-                                { 
-                                    new LyricLine("暂无歌词", TimeSpan.Zero) 
-                                };
+                                Dispatcher.Invoke(() =>
+                                {
+                                    lyricLines.Clear();
+                                    lyricLines.Add(new LyricLine("无歌词", TimeSpan.Zero));
+                                });
                             }
                         }
                         else
                         {
-                            LyricsItemsControl.ItemsSource = new List<LyricLine> 
-                            { 
-                                new LyricLine("暂无歌词", TimeSpan.Zero) 
-                            };
+                            Dispatcher.Invoke(() =>
+                            {
+                                lyricLines.Clear();
+                                lyricLines.Add(new LyricLine("暂无歌词", TimeSpan.Zero));
+                            });
                         }
                     }
                 }
                 else
                 {
                     Debug.WriteLine("当前TagLib文件对象为空");
-                    LyricsItemsControl.ItemsSource = new List<LyricLine> 
-                    { 
-                        new LyricLine("无法读取歌词", TimeSpan.Zero) 
-                    };
+                    Dispatcher.Invoke(() =>
+                    {
+                        lyricLines.Clear();
+                        lyricLines.Add(new LyricLine("无法读取歌词", TimeSpan.Zero));
+                    });
                 }
                 
                 Debug.WriteLine("=== 歌词读取完成 ===\n");
@@ -632,56 +648,55 @@ namespace WpfApp3
             {
                 Debug.WriteLine($"读取歌词时出错: {ex.Message}");
                 Debug.WriteLine($"异常堆栈: {ex.StackTrace}");
-                LyricsItemsControl.ItemsSource = new List<LyricLine> 
-                { 
-                    new LyricLine("歌词加载失败", TimeSpan.Zero) 
-                };
+                Dispatcher.Invoke(() =>
+                {
+                    lyricLines.Clear();
+                    lyricLines.Add(new LyricLine("歌词加载失败", TimeSpan.Zero));
+                });
             }
         }
 
         private void ProcessLyricLines(string[] lines)
         {
+            Dispatcher.Invoke(() => lyricLines.Clear());
             int i = 0;
-            while (i < lines.Length - 1) // 减1是为了防止最后一行越界
+            while (i < lines.Length - 1)
             {
                 string line1 = lines[i];
                 string line2 = lines[i + 1];
                 
-                // 尝试解析第一行和第二行
                 if (TryParseLyricLine(line1, out TimeSpan time1, out string text1) &&
                     TryParseLyricLine(line2, out TimeSpan time2, out string text2))
                 {
-                    // 如果两行时间戳相同，认为是一对双语歌词
                     if (time1 == time2)
                     {
-                        // 第一行是英文（主歌词），第二行是中文（翻译）
-                        lyrics[time1] = text1; // 存储英文作为主歌词
-                        var lyricLine = new LyricLine(text1, text2, time1); // text1是主歌词(外文)，text2是翻译(中文)
-                        lyricLines.Add(lyricLine);
+                        lyrics[time1] = text1;
+                        Dispatcher.Invoke(() => 
+                            lyricLines.Add(new LyricLine(text1, text2, time1)));
                         Debug.WriteLine($"解析双语歌词: [{time1}] {text1} | {text2}");
-                        i += 2; // 跳过这两行
+                        i += 2;
                         continue;
                     }
                 }
                 
-                // 如果不是成对的双语歌词，就按单行处理
                 if (TryParseLyricLine(line1, out TimeSpan time, out string text))
                 {
                     lyrics[time] = text;
-                    lyricLines.Add(new LyricLine(text, time));
+                    Dispatcher.Invoke(() => 
+                        lyricLines.Add(new LyricLine(text, time)));
                     Debug.WriteLine($"解析单语歌词: [{time}] {text}");
                 }
                 i++;
             }
             
-            // 处理最后一行
             if (i < lines.Length)
             {
                 string lastLine = lines[i];
                 if (TryParseLyricLine(lastLine, out TimeSpan time, out string text))
                 {
                     lyrics[time] = text;
-                    lyricLines.Add(new LyricLine(text, time));
+                    Dispatcher.Invoke(() => 
+                        lyricLines.Add(new LyricLine(text, time)));
                     Debug.WriteLine($"解析最后一行: [{time}] {text}");
                 }
             }
@@ -718,15 +733,47 @@ namespace WpfApp3
         {
             if (lyrics.Count == 0)
             {
-                LyricsItemsControl.ItemsSource = new List<LyricLine> 
-                { 
-                    new LyricLine("暂无歌词", TimeSpan.Zero) 
-                };
+                Dispatcher.Invoke(() =>
+                {
+                    lyricLines.Clear();
+                    lyricLines.Add(new LyricLine("暂无歌词", TimeSpan.Zero));
+                });
                 return;
             }
 
-            // 直接使用已经处理好的lyricLines列表
-            LyricsItemsControl.ItemsSource = lyricLines.OrderBy(l => l.Time).ToList();
+            Debug.WriteLine("\n=== ���始更新歌词显示 ===");
+            
+            Dispatcher.Invoke(() =>
+            {
+                // 保持当前的滚动位置
+                var scrollViewer = FindVisualChild<ScrollViewer>(LyricsContainer);
+                double currentOffset = scrollViewer?.VerticalOffset ?? 0;
+                
+                // 更新歌词集合
+                var sorted = lyricLines.OrderBy(l => l.Time).ToList();
+                lyricLines.Clear();
+                foreach (var line in sorted)
+                {
+                    lyricLines.Add(line);
+                }
+                
+                // 确保 ItemsSource 绑定正确
+                if (LyricsItemsControl.ItemsSource != lyricLines)
+                {
+                    LyricsItemsControl.ItemsSource = lyricLines;
+                }
+
+                // 强制布局更新
+                LyricsItemsControl.UpdateLayout();
+                
+                // 恢复滚动位置
+                if (scrollViewer != null)
+                {
+                    scrollViewer.ScrollToVerticalOffset(currentOffset);
+                }
+                
+                Debug.WriteLine($"歌词总行数: {lyricLines.Count}");
+            });
         }
 
         private void LyricsTimer_Tick(object sender, EventArgs e)
@@ -758,19 +805,19 @@ namespace WpfApp3
             {
                 line.FontSize = 20;
                 line.TextColor = new SolidColorBrush(Colors.Black);
-                line.FontWeight = FontWeights.Normal;  // 重置为正常粗细
+                line.FontWeight = FontWeights.Normal;
             }
 
             // 设置当前歌词的高亮样式
             currentLyric.FontSize = 24;
             currentLyric.TextColor = new SolidColorBrush(Colors.Purple);
-            currentLyric.FontWeight = FontWeights.Bold;  // 设置为粗体
+            currentLyric.FontWeight = FontWeights.Bold;
 
             // 更新当前歌词行引用
             currentLyricLine = currentLyric;
-
-            // 强制刷新ItemsControl
-            LyricsItemsControl.Items.Refresh();
+            
+            // 不再需要手动刷新
+            // LyricsItemsControl.Items.Refresh();
         }
 
         private void ScrollToCurrentLyric(LyricLine currentLyric)
@@ -778,9 +825,11 @@ namespace WpfApp3
             try
             {
                 var index = lyricLines.IndexOf(currentLyric);
+                Debug.WriteLine($"\n=== 开始滚动到当前歌词 ===");
+                Debug.WriteLine($"当前歌词索引: {index}");
+                
                 if (index >= 0)
                 {
-                    // 等待布局更新完成后再计算滚动位置
                     Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
                     {
                         var container = LyricsItemsControl.ItemContainerGenerator
@@ -788,16 +837,44 @@ namespace WpfApp3
 
                         if (container != null)
                         {
-                            // 获取当前歌词项的位置和大小信息
-                            var transform = container.TransformToVisual(LyricsScrollViewer);
-                            var containerRect = transform.TransformBounds(new Rect(0, 0, container.ActualWidth, container.ActualHeight));
+                            var scrollViewer = FindVisualChild<ScrollViewer>(LyricsContainer);
+                            if (scrollViewer != null)
+                            {
+                                var containerTop = container.TranslatePoint(new System.Windows.Point(0, 0), LyricsItemsControl).Y;
+                                var targetOffset = containerTop - (scrollViewer.ViewportHeight / 2) + (container.ActualHeight / 2);
 
-                            // 计算目标滚动位置（使当前歌词位于滚动视图中央）
-                            double scrollTarget = containerRect.Y + LyricsScrollViewer.VerticalOffset - 
-                                (LyricsScrollViewer.ViewportHeight - container.ActualHeight) / 2;
-
-                            // 平滑滚动到目标位置
-                            LyricsScrollViewer.ScrollToVerticalOffset(scrollTarget);
+                                // 使用平滑滚动
+                                double currentOffset = scrollViewer.VerticalOffset;
+                                double distance = targetOffset - currentOffset;
+                                
+                                const int steps = 30; // 动画步数
+                                const int intervalMs = 16; // 每步时间间隔(ms)
+                                
+                                var timer = new DispatcherTimer
+                                {
+                                    Interval = TimeSpan.FromMilliseconds(intervalMs)
+                                };
+                                
+                                int currentStep = 0;
+                                timer.Tick += (s, e) =>
+                                {
+                                    currentStep++;
+                                    if (currentStep <= steps)
+                                    {
+                                        // 使用缓动函数使滚动更平滑
+                                        double progress = EaseInOutCubic(currentStep / (double)steps);
+                                        double newOffset = currentOffset + (distance * progress);
+                                        scrollViewer.ScrollToVerticalOffset(newOffset);
+                                    }
+                                    else
+                                    {
+                                        timer.Stop();
+                                        scrollViewer.ScrollToVerticalOffset(targetOffset); // 确保到达目标位置
+                                    }
+                                };
+                                
+                                timer.Start();
+                            }
                         }
                     }));
                 }
@@ -805,19 +882,116 @@ namespace WpfApp3
             catch (Exception ex)
             {
                 Debug.WriteLine($"ScrollToCurrentLyric error: {ex.Message}");
+                Debug.WriteLine($"Stack trace: {ex.StackTrace}");
             }
+        }
+
+        // 添加缓动函数
+        private double EaseInOutCubic(double t)
+        {
+            return t < 0.5 ? 4 * t * t * t : 1 - Math.Pow(-2 * t + 2, 3) / 2;
+        }
+
+        // 添加辅助方法来查找 ScrollViewer
+        private T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                
+                if (child is T found)
+                    return found;
+                    
+                var result = FindVisualChild<T>(child);
+                if (result != null)
+                    return result;
+            }
+            return null;
         }
     }
 
     // 添加歌词行类
-    public class LyricLine
+    public class LyricLine : INotifyPropertyChanged
     {
-        public string Text { get; set; }         // 主要歌词文本
-        public string Translation { get; set; }   // 翻译/第二语言歌词
+        private string _text;
+        private string _translation;
+        private double _fontSize;
+        private SolidColorBrush _textColor;
+        private FontWeight _fontWeight;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public string Text
+        {
+            get => _text;
+            set
+            {
+                if (_text != value)
+                {
+                    _text = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string Translation
+        {
+            get => _translation;
+            set
+            {
+                if (_translation != value)
+                {
+                    _translation = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public TimeSpan Time { get; set; }
-        public double FontSize { get; set; }
-        public SolidColorBrush TextColor { get; set; }
-        public FontWeight FontWeight { get; set; }  // 添加字体粗细属性
+
+        public double FontSize
+        {
+            get => _fontSize;
+            set
+            {
+                if (_fontSize != value)
+                {
+                    _fontSize = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public SolidColorBrush TextColor
+        {
+            get => _textColor;
+            set
+            {
+                if (_textColor != value)
+                {
+                    _textColor = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public FontWeight FontWeight
+        {
+            get => _fontWeight;
+            set
+            {
+                if (_fontWeight != value)
+                {
+                    _fontWeight = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         public LyricLine(string text, string translation, TimeSpan time)
         {
@@ -826,7 +1000,7 @@ namespace WpfApp3
             Time = time;
             FontSize = 20;
             TextColor = new SolidColorBrush(Colors.Black);
-            FontWeight = FontWeights.Normal;  // 默认正常粗细
+            FontWeight = FontWeights.Normal;
         }
 
         public LyricLine(string text, TimeSpan time) : this(text, null, time) { }

@@ -5,7 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfApp3"
         mc:Ignorable="d"
-        Title="Music_player" Height="650" Width="800">
+        Title="Music_player" 
+        MinHeight="580" 
+        MinWidth="600"
+        Height="700" 
+        Width="800">
     
     <Window.Resources>
         <!-- 普通按钮样式 -->
@@ -60,98 +64,100 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="260"/>   <!-- 专辑信息区域: 封面(200) + 标题(60) -->
+            <RowDefinition Height="*"/>     <!-- 歌词显示区域: 自适应高度 -->
+            <RowDefinition Height="40"/>    <!-- 进度条 -->
+            <RowDefinition Height="60"/>    <!-- 控制按钮 -->
         </Grid.RowDefinitions>
 
-        <!-- 主要内容区域 -->
-        <Grid Grid.Row="0">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            
-            <!-- 专辑信息区域 -->
-            <Grid Grid.Row="0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+        <!-- 专辑信息区域 -->
+        <Grid Grid.Row="0" Margin="20,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-                <!-- 专辑封面区域 -->
-                <Border Grid.Column="0" 
-                        Width="200" 
-                        Height="200" 
-                        Margin="20"
-                        VerticalAlignment="Top"
-                        BorderBrush="{StaticResource PrimaryColor}"
-                        BorderThickness="1"
-                        CornerRadius="5"
-                        x:Name="AlbumArtBorder">
-                    <Image x:Name="AlbumArtImage" 
-                           Stretch="UniformToFill"
-                           RenderOptions.BitmapScalingMode="HighQuality">
-                        <Image.Effect>
-                            <DropShadowEffect BlurRadius="15" 
-                                            ShadowDepth="5" 
-                                            Opacity="0.3"/>
-                        </Image.Effect>
-                    </Image>
-                </Border>
-
-                <!-- 音乐信息区域 -->
-                <StackPanel Grid.Column="1" 
-                            Margin="20"
-                            VerticalAlignment="Top">
-                    <TextBlock x:Name="TitleTextBlock"
-                             FontSize="24"
-                             FontWeight="Bold"
-                             Margin="0,0,0,10"
-                             Text="未播放"/>
-                    
-                    <TextBlock x:Name="ArtistTextBlock"
-                             FontSize="18"
-                             Margin="0,0,0,5"
-                             Foreground="#666666"
-                             Text="未知艺术家"/>
-                    
-                    <TextBlock x:Name="AlbumTextBlock"
-                             FontSize="16"
-                             Foreground="#888888"
-                             Text="未知专辑"/>
-                </StackPanel>
-            </Grid>
-
-            <!-- 歌词显示区域 -->
-            <Border Grid.Row="1" 
-                    Margin="20,0,20,20"
+            <!-- 专辑封面区域 -->
+            <Border Grid.Column="0" 
+                    Width="210" 
+                    Height="210" 
+                    Margin="10"
+                    VerticalAlignment="Top"
                     BorderBrush="{StaticResource PrimaryColor}"
                     BorderThickness="1"
-                    CornerRadius="5">
-                <ScrollViewer x:Name="LyricsScrollViewer" 
-                              VerticalScrollBarVisibility="Auto" 
-                              HorizontalScrollBarVisibility="Disabled">
+                    CornerRadius="5"
+                    x:Name="AlbumArtBorder">
+                <Image x:Name="AlbumArtImage" 
+                       Stretch="UniformToFill"
+                       RenderOptions.BitmapScalingMode="HighQuality">
+                    <Image.Effect>
+                        <DropShadowEffect BlurRadius="15" 
+                                        ShadowDepth="5" 
+                                        Opacity="0.3"/>
+                    </Image.Effect>
+                </Image>
+            </Border>
+
+            <!-- 音乐信息区域 -->
+            <StackPanel Grid.Column="1" 
+                        Margin="20"
+                        VerticalAlignment="Top">
+                <TextBlock x:Name="TitleTextBlock"
+                         FontSize="24"
+                         FontWeight="Bold"
+                         Margin="0,0,0,10"
+                         Text="未播放"/>
+                
+                <TextBlock x:Name="ArtistTextBlock"
+                         FontSize="18"
+                         Margin="0,0,0,5"
+                         Foreground="#666666"
+                         Text="未知艺术家"/>
+                
+                <TextBlock x:Name="AlbumTextBlock"
+                         FontSize="16"
+                         Foreground="#888888"
+                         Text="未知专辑"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- 歌词显示区域 -->
+        <Border Grid.Row="1" 
+                Margin="20,-15,20,5"
+                BorderBrush="{StaticResource PrimaryColor}"
+                BorderThickness="1"
+                CornerRadius="5">
+            <Grid x:Name="LyricsContainer">
+                <ScrollViewer VerticalScrollBarVisibility="Hidden" 
+                             HorizontalScrollBarVisibility="Disabled"
+                             PanningMode="VerticalOnly">
                     <ItemsControl x:Name="LyricsItemsControl">
-                        <ItemsControl.Resources>
-                            <Style TargetType="ItemsControl">
-                                <Setter Property="Padding" Value="0,150"/>
-                            </Style>
-                        </ItemsControl.Resources>
+                        <ItemsControl.RenderTransform>
+                            <TranslateTransform x:Name="LyricsTransform" Y="0"/>
+                        </ItemsControl.RenderTransform>
+                        
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel Orientation="Vertical"
+                                                  HorizontalAlignment="Stretch"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
                         
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <StackPanel Margin="0,8">
+                                <StackPanel Margin="0,8" 
+                                          x:Name="LyricLineContainer"
+                                          HorizontalAlignment="Stretch">
                                     <TextBlock Text="{Binding Text}"
-                                             FontSize="{Binding FontSize}"
-                                             FontWeight="{Binding FontWeight}"
-                                             Foreground="{Binding TextColor}"
+                                             FontSize="{Binding FontSize, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
+                                             FontWeight="{Binding FontWeight, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Foreground="{Binding TextColor, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
                                              TextAlignment="Center"
                                              TextWrapping="Wrap"/>
                                     <TextBlock Text="{Binding Translation}"
-                                             FontSize="{Binding FontSize, Converter={StaticResource FontSizeConverter}}"
-                                             FontWeight="{Binding FontWeight}"
-                                             Foreground="{Binding TextColor}"
+                                             FontSize="{Binding FontSize, Converter={StaticResource FontSizeConverter}, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
+                                             FontWeight="{Binding FontWeight, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Foreground="{Binding TextColor, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
                                              TextAlignment="Center"
                                              TextWrapping="Wrap"
                                              Visibility="{Binding Translation, Converter={StaticResource NullToVisibilityConverter}}"
@@ -161,23 +167,22 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
-            </Border>
-        </Grid>
+            </Grid>
+        </Border>
 
         <!-- 进度条 -->
         <Slider x:Name="ProgressSlider" 
-                Grid.Row="1" 
-                Margin="20,0,20,20"
+                Grid.Row="2" 
+                Margin="20,5"
                 Minimum="0" 
                 Maximum="100" 
                 Value="0"/>
 
         <!-- 控制按钮区域 -->
-        <StackPanel Grid.Row="2" 
+        <StackPanel Grid.Row="3" 
                     Orientation="Horizontal" 
                     HorizontalAlignment="Center" 
-                    VerticalAlignment="Center" 
-                    Margin="0,10,0,20">
+                    VerticalAlignment="Center">
             <Button x:Name="SelectButton" 
                     Style="{StaticResource PlayerButton}"
                     Click="SelectButton_Click">
