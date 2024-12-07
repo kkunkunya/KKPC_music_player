@@ -21,6 +21,7 @@ using System.Windows.Data;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace WpfApp3
 {
@@ -389,7 +390,7 @@ namespace WpfApp3
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"加载默认封面失败: {ex.Message}");
+                Debug.WriteLine($"认封面失败: {ex.Message}");
                 currentAlbumArt = null;
                 UpdateAlbumArt(null);
             }
@@ -557,7 +558,7 @@ namespace WpfApp3
                 
                 if (currentTagFile != null && currentTagFile.Tag != null)
                 {
-                    // 尝试从不同的标签字段中获取歌词
+                    // 尝试从不同的标签字段获取歌词
                     string lyricsText = null;
                     
                     // 尝试从通用Lyrics标签获取
@@ -610,7 +611,7 @@ namespace WpfApp3
                             ProcessLyricLines(lines);
                             if (lyrics.Count > 0)
                             {
-                                Debug.WriteLine($"从部LRC文件加载了 {lyrics.Count} 行歌词");
+                                Debug.WriteLine($"从LRC文件加载了 {lyrics.Count} 行歌词");
                                 UpdateLyricsDisplay();
                             }
                             else
@@ -642,7 +643,7 @@ namespace WpfApp3
                     });
                 }
                 
-                Debug.WriteLine("=== 歌词读取完成 ===\n");
+                Debug.WriteLine("=== ��词读取完成 ===\n");
             }
             catch (Exception ex)
             {
@@ -684,7 +685,7 @@ namespace WpfApp3
                     lyrics[time] = text;
                     Dispatcher.Invoke(() => 
                         lyricLines.Add(new LyricLine(text, time)));
-                    Debug.WriteLine($"解析单语歌词: [{time}] {text}");
+                    Debug.WriteLine($"解析单歌词: [{time}] {text}");
                 }
                 i++;
             }
@@ -741,23 +742,18 @@ namespace WpfApp3
                 return;
             }
 
-            Debug.WriteLine("\n=== ���始更新歌词显示 ===");
-            
             Dispatcher.Invoke(() =>
             {
-                // 保持当前的滚动位置
-                var scrollViewer = FindVisualChild<ScrollViewer>(LyricsContainer);
+                var scrollViewer = GetScrollViewer(LyricsItemsControl);
                 double currentOffset = scrollViewer?.VerticalOffset ?? 0;
-                
-                // 更新歌词集合
+
                 var sorted = lyricLines.OrderBy(l => l.Time).ToList();
                 lyricLines.Clear();
                 foreach (var line in sorted)
                 {
                     lyricLines.Add(line);
                 }
-                
-                // 确保 ItemsSource 绑定正确
+
                 if (LyricsItemsControl.ItemsSource != lyricLines)
                 {
                     LyricsItemsControl.ItemsSource = lyricLines;
@@ -765,14 +761,12 @@ namespace WpfApp3
 
                 // 强制布局更新
                 LyricsItemsControl.UpdateLayout();
-                
+
                 // 恢复滚动位置
                 if (scrollViewer != null)
                 {
                     scrollViewer.ScrollToVerticalOffset(currentOffset);
                 }
-                
-                Debug.WriteLine($"歌词总行数: {lyricLines.Count}");
             });
         }
 
@@ -792,7 +786,7 @@ namespace WpfApp3
                 {
                     // 更新歌词显示状态
                     UpdateLyricHighlight(currentLyric);
-                    // 自动滚动到当前歌词
+                    // 自动滚动到��歌词
                     ScrollToCurrentLyric(currentLyric);
                 }
             }
@@ -825,55 +819,40 @@ namespace WpfApp3
             try
             {
                 var index = lyricLines.IndexOf(currentLyric);
-                Debug.WriteLine($"\n=== 开始滚动到当前歌词 ===");
-                Debug.WriteLine($"当前歌词索引: {index}");
-                
                 if (index >= 0)
                 {
-                    Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+                    Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(() =>
                     {
-                        var container = LyricsItemsControl.ItemContainerGenerator
-                            .ContainerFromIndex(index) as FrameworkElement;
-
-                        if (container != null)
+                        var scrollViewer = LyricScrollViewer;
+                        if (scrollViewer != null)
                         {
-                            var scrollViewer = FindVisualChild<ScrollViewer>(LyricsContainer);
-                            if (scrollViewer != null)
-                            {
-                                var containerTop = container.TranslatePoint(new System.Windows.Point(0, 0), LyricsItemsControl).Y;
-                                var targetOffset = containerTop - (scrollViewer.ViewportHeight / 2) + (container.ActualHeight / 2);
+                            scrollViewer.UpdateLayout();
+                            LyricsItemsControl.UpdateLayout();
 
-                                // 使用平滑滚动
-                                double currentOffset = scrollViewer.VerticalOffset;
-                                double distance = targetOffset - currentOffset;
+                            var container = LyricsItemsControl.ItemContainerGenerator
+                                .ContainerFromIndex(index) as FrameworkElement;
+
+                            if (container != null)
+                            {
+                                container.UpdateLayout();
                                 
-                                const int steps = 30; // 动画步数
-                                const int intervalMs = 16; // 每步时间间隔(ms)
+                                var point = container.TransformToAncestor(LyricsItemsControl)
+                                                   .Transform(new System.Windows.Point(0, 0));
+                                var containerTop = point.Y;
                                 
-                                var timer = new DispatcherTimer
+                                var targetOffset = containerTop + (container.ActualHeight / 2) - (scrollViewer.ViewportHeight / 2);
+                                targetOffset = Math.Max(0, Math.Min(targetOffset, scrollViewer.ScrollableHeight));
+
+                               var animation = new DoubleAnimation
                                 {
-                                    Interval = TimeSpan.FromMilliseconds(intervalMs)
-                                };
-                                
-                                int currentStep = 0;
-                                timer.Tick += (s, e) =>
-                                {
-                                    currentStep++;
-                                    if (currentStep <= steps)
-                                    {
-                                        // 使用缓动函数使滚动更平滑
-                                        double progress = EaseInOutCubic(currentStep / (double)steps);
-                                        double newOffset = currentOffset + (distance * progress);
-                                        scrollViewer.ScrollToVerticalOffset(newOffset);
-                                    }
-                                    else
-                                    {
-                                        timer.Stop();
-                                        scrollViewer.ScrollToVerticalOffset(targetOffset); // 确保到达目标位置
+                                    Duration = TimeSpan.FromMilliseconds(300),
+                                   EasingFunction = new QuinticEase 
+                                    { 
+                                        EasingMode = EasingMode.EaseInOut  // 使用 EaseInOut 使动画更平滑
                                     }
                                 };
-                                
-                                timer.Start();
+
+                                ScrollViewerAnimator.AnimateScroll(scrollViewer, targetOffset, animation);
                             }
                         }
                     }));
@@ -882,7 +861,110 @@ namespace WpfApp3
             catch (Exception ex)
             {
                 Debug.WriteLine($"ScrollToCurrentLyric error: {ex.Message}");
-                Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+            }
+        }
+
+        // 添加获取 ScrollViewer 的辅助方法
+        private ScrollViewer GetScrollViewer(DependencyObject element)
+        {
+            if (element is ScrollViewer)
+                return element as ScrollViewer;
+
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(element); i++)
+            {
+                var child = VisualTreeHelper.GetChild(element, i);
+                var result = GetScrollViewer(child);
+                if (result != null)
+                    return result;
+            }
+            return null;
+        }
+
+        // 修改 ScrollViewerAnimator 类
+        public static class ScrollViewerAnimator
+        {
+            private static readonly Dictionary<ScrollViewer, AnimationState> _activeAnimations 
+                = new Dictionary<ScrollViewer, AnimationState>();
+
+            private class AnimationState
+            {
+                public double StartOffset { get; set; }
+                public double TargetOffset { get; set; }
+                public double StartTime { get; set; }
+                public double Duration { get; set; }
+                public IEasingFunction EasingFunction { get; set; }
+                public CompositionTarget RenderingSubscription { get; set; }
+            }
+
+            public static void AnimateScroll(ScrollViewer scrollViewer, double targetOffset, DoubleAnimation animation)
+            {
+                // 如果已经有正在进行的动画，先停止它
+                StopAnimation(scrollViewer);
+
+                double startOffset = scrollViewer.VerticalOffset;
+                double distance = targetOffset - startOffset;
+                
+                // 如果距离太小，直接设置位置
+                if (Math.Abs(distance) < 1)
+                {
+                    scrollViewer.ScrollToVerticalOffset(targetOffset);
+                    return;
+                }
+
+                var state = new AnimationState
+                {
+                    StartOffset = startOffset,
+                    TargetOffset = targetOffset,
+                    StartTime = GetCurrentTime(),
+                    Duration = animation.Duration.TimeSpan.TotalMilliseconds,
+                    EasingFunction = animation.EasingFunction
+                };
+
+                _activeAnimations[scrollViewer] = state;
+
+                CompositionTarget.Rendering += OnRendering;
+
+                void OnRendering(object sender, EventArgs e)
+                {
+                    if (!_activeAnimations.TryGetValue(scrollViewer,out var currentState))
+                    {
+                        CompositionTarget.Rendering -= OnRendering;
+                        return;
+                    }
+
+                    double elapsed = GetCurrentTime() - currentState.StartTime;
+                    double progress = Math.Min(1.0, elapsed / currentState.Duration);
+
+                    if (currentState.EasingFunction != null)
+                    {
+                        progress = currentState.EasingFunction.Ease(progress);
+                    }
+
+                    double newOffset = currentState.StartOffset + (distance * progress);
+                    newOffset = Math.Max(0, Math.Min(newOffset, scrollViewer.ScrollableHeight));
+                    
+                    scrollViewer.ScrollToVerticalOffset(newOffset);
+
+                    if (progress >= 1.0)
+                    {
+                        StopAnimation(scrollViewer);
+                        CompositionTarget.Rendering -= OnRendering;
+                        scrollViewer.ScrollToVerticalOffset(targetOffset);
+                    }
+                }
+            }
+
+            private static void StopAnimation(ScrollViewer scrollViewer)
+            {
+                if (_activeAnimations.TryGetValue(scrollViewer, out var state))
+                {
+                    _activeAnimations.Remove(scrollViewer);
+                }
+            }
+
+            private static double GetCurrentTime()
+            {
+                return (double)Stopwatch.GetTimestamp() / Stopwatch.Frequency * 1000.0;
             }
         }
 

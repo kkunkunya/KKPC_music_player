@@ -128,21 +128,36 @@
                 BorderThickness="1"
                 CornerRadius="5">
             <Grid x:Name="LyricsContainer">
-                <ScrollViewer VerticalScrollBarVisibility="Hidden" 
+                <ScrollViewer x:Name="LyricScrollViewer"
+                             VerticalScrollBarVisibility="Hidden"
                              HorizontalScrollBarVisibility="Disabled"
-                             PanningMode="VerticalOnly">
-                    <ItemsControl x:Name="LyricsItemsControl">
-                        <ItemsControl.RenderTransform>
-                            <TranslateTransform x:Name="LyricsTransform" Y="0"/>
-                        </ItemsControl.RenderTransform>
-                        
+                             PanningMode="VerticalOnly"
+                             RenderOptions.BitmapScalingMode="HighQuality"
+                             UseLayoutRounding="True"
+                             CacheMode="BitmapCache"
+                             ScrollViewer.IsDeferredScrollingEnabled="True">
+                    <ItemsControl x:Name="LyricsItemsControl"
+                                 VirtualizingPanel.IsVirtualizing="True"
+                                 VirtualizingPanel.VirtualizationMode="Recycling"
+                                 VirtualizingPanel.CacheLength="5"
+                                 VirtualizingPanel.CacheLengthUnit="Page"
+                                 RenderOptions.BitmapScalingMode="HighQuality"
+                                 RenderOptions.EdgeMode="Aliased"
+                                 UseLayoutRounding="True"
+                                 CacheMode="BitmapCache">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <VirtualizingStackPanel Orientation="Vertical"
-                                                  HorizontalAlignment="Stretch"/>
+                                <VirtualizingStackPanel/>
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         
+                        <ItemsControl.Template>
+                            <ControlTemplate TargetType="ItemsControl">
+                                <ItemsPresenter Margin="0,150"/>
+                            </ControlTemplate>
+                        </ItemsControl.Template>
+
+                        <!-- 添加回 ItemTemplate -->
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Margin="0,8" 
