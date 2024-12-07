@@ -45,6 +45,9 @@ namespace WpfApp3
         private ObservableCollection<LyricLine> lyricLines = new ObservableCollection<LyricLine>();
         private LyricLine currentLyricLine;
         private Dictionary<int, double> lyricPositions = new Dictionary<int, double>();
+        private const double BASE_WINDOW_HEIGHT = 700; // 基准窗口高度
+        private const double BASE_LYRICS_SIZE = 20;    // 基准歌词大小
+        private const double BASE_CURRENT_LYRICS_SIZE = 24; // 基准当前歌词大小
 
         public MainWindow()
         {
@@ -52,8 +55,10 @@ namespace WpfApp3
             InitializePlayer();
             InitializePlaylistPopup();
             InitializeLyricsTimer();
-
-            // 只保留这一行测试输出
+            
+            // 添加窗口大小改变事件处理
+            SizeChanged += MainWindow_SizeChanged;
+            
             Debug.WriteLine("=== 程序启动 ===");
         }
 
@@ -317,7 +322,7 @@ namespace WpfApp3
                                 Debug.WriteLine($"BitmapImage创建成功:");
                                 Debug.WriteLine($"- 宽度: {albumArt.Width}");
                                 Debug.WriteLine($"- 高度: {albumArt.Height}");
-                                Debug.WriteLine($"- 像素宽度: {albumArt.PixelWidth}");
+                                Debug.WriteLine($"- 像��宽度: {albumArt.PixelWidth}");
                                 Debug.WriteLine($"- 像素高度: {albumArt.PixelHeight}");
 
                                 currentAlbumArt = albumArt;
@@ -643,7 +648,7 @@ namespace WpfApp3
                     });
                 }
                 
-                Debug.WriteLine("=== ��词读取完成 ===\n");
+                Debug.WriteLine("=== 歌词读取完成 ===\n");
             }
             catch (Exception ex)
             {
@@ -659,6 +664,7 @@ namespace WpfApp3
 
         private void ProcessLyricLines(string[] lines)
         {
+            double scale = this.ActualHeight / BASE_WINDOW_HEIGHT;
             Dispatcher.Invoke(() => lyricLines.Clear());
             int i = 0;
             while (i < lines.Length - 1)
@@ -673,7 +679,10 @@ namespace WpfApp3
                     {
                         lyrics[time1] = text1;
                         Dispatcher.Invoke(() => 
-                            lyricLines.Add(new LyricLine(text1, text2, time1)));
+                            lyricLines.Add(new LyricLine(text1, text2, time1) 
+                            { 
+                                FontSize = BASE_LYRICS_SIZE * scale 
+                            }));
                         Debug.WriteLine($"解析双语歌词: [{time1}] {text1} | {text2}");
                         i += 2;
                         continue;
@@ -684,7 +693,10 @@ namespace WpfApp3
                 {
                     lyrics[time] = text;
                     Dispatcher.Invoke(() => 
-                        lyricLines.Add(new LyricLine(text, time)));
+                        lyricLines.Add(new LyricLine(text, time) 
+                        { 
+                            FontSize = BASE_LYRICS_SIZE * scale 
+                        }));
                     Debug.WriteLine($"解析单歌词: [{time}] {text}");
                 }
                 i++;
@@ -697,7 +709,10 @@ namespace WpfApp3
                 {
                     lyrics[time] = text;
                     Dispatcher.Invoke(() => 
-                        lyricLines.Add(new LyricLine(text, time)));
+                        lyricLines.Add(new LyricLine(text, time) 
+                        { 
+                            FontSize = BASE_LYRICS_SIZE * scale 
+                        }));
                     Debug.WriteLine($"解析最后一行: [{time}] {text}");
                 }
             }
@@ -786,7 +801,7 @@ namespace WpfApp3
                 {
                     // 更新歌词显示状态
                     UpdateLyricHighlight(currentLyric);
-                    // 自动滚动到��歌词
+                    // 自动滚动到歌词
                     ScrollToCurrentLyric(currentLyric);
                 }
             }
@@ -794,16 +809,18 @@ namespace WpfApp3
 
         private void UpdateLyricHighlight(LyricLine currentLyric)
         {
+            double scale = this.ActualHeight / BASE_WINDOW_HEIGHT;
+            
             // 重置所有歌词的样式
             foreach (var line in lyricLines)
             {
-                line.FontSize = 20;
+                line.FontSize = BASE_LYRICS_SIZE * scale;
                 line.TextColor = new SolidColorBrush(Colors.Black);
                 line.FontWeight = FontWeights.Normal;
             }
 
             // 设置当前歌词的高亮样式
-            currentLyric.FontSize = 24;
+            currentLyric.FontSize = BASE_CURRENT_LYRICS_SIZE * scale;
             currentLyric.TextColor = new SolidColorBrush(Colors.Purple);
             currentLyric.FontWeight = FontWeights.Bold;
 
@@ -989,6 +1006,30 @@ namespace WpfApp3
                     return result;
             }
             return null;
+        }
+
+        private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            UpdateLyricsFontSize();
+        }
+
+        private void UpdateLyricsFontSize()
+        {
+            // 计算缩放比例
+            double scale = this.ActualHeight / BASE_WINDOW_HEIGHT;
+            
+            // 更新所有歌词的字体大小
+            foreach (var line in lyricLines)
+            {
+                if (line == currentLyricLine)
+                {
+                    line.FontSize = BASE_CURRENT_LYRICS_SIZE * scale;
+                }
+                else
+                {
+                    line.FontSize = BASE_LYRICS_SIZE * scale;
+                }
+            }
         }
     }
 

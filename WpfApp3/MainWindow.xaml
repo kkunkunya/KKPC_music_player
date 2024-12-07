@@ -55,8 +55,27 @@
             </Setter>
         </Style>
 
-        <!-- 添加字体大小转换器，使翻译文本稍小 -->
+        <!-- 添加回字体大小转换器 -->
         <local:FontSizeConverter x:Key="FontSizeConverter"/>
+        
+        <!-- 字体相关资源 -->
+        <FontFamily x:Key="ChineseFont">Microsoft YaHei UI, PingFang SC, SimHei</FontFamily>
+        <FontFamily x:Key="EnglishFont">Segoe UI, Arial</FontFamily>
+        
+        <!-- 修改歌词样式 -->
+        <Style x:Key="LyricTextStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource ChineseFont}"/>
+            <Setter Property="TextOptions.TextFormattingMode" Value="Ideal"/>
+            <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="2" 
+                                    ShadowDepth="1" 
+                                    Direction="270" 
+                                    Opacity="0.2"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
         
         <!-- 添加空值到可见性转换器 -->
         <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
@@ -105,17 +124,20 @@
                 <TextBlock x:Name="TitleTextBlock"
                          FontSize="24"
                          FontWeight="Bold"
+                         FontFamily="{StaticResource ChineseFont}"
                          Margin="0,0,0,10"
                          Text="未播放"/>
                 
                 <TextBlock x:Name="ArtistTextBlock"
                          FontSize="18"
+                         FontFamily="{StaticResource ChineseFont}"
                          Margin="0,0,0,5"
                          Foreground="#666666"
-                         Text="未知艺术家"/>
+                         Text="未知艺人"/>
                 
                 <TextBlock x:Name="AlbumTextBlock"
                          FontSize="16"
+                         FontFamily="{StaticResource ChineseFont}"
                          Foreground="#888888"
                          Text="未知专辑"/>
             </StackPanel>
@@ -164,12 +186,14 @@
                                           x:Name="LyricLineContainer"
                                           HorizontalAlignment="Stretch">
                                     <TextBlock Text="{Binding Text}"
+                                             Style="{StaticResource LyricTextStyle}"
                                              FontSize="{Binding FontSize, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
                                              FontWeight="{Binding FontWeight, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
                                              Foreground="{Binding TextColor, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
                                              TextAlignment="Center"
                                              TextWrapping="Wrap"/>
                                     <TextBlock Text="{Binding Translation}"
+                                             Style="{StaticResource LyricTextStyle}"
                                              FontSize="{Binding FontSize, Converter={StaticResource FontSizeConverter}, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
                                              FontWeight="{Binding FontWeight, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
                                              Foreground="{Binding TextColor, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
@@ -264,6 +288,7 @@
                     MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <DockPanel Height="32" LastChildFill="False">
                     <TextBlock Text="播放列表" 
+                             FontFamily="{StaticResource ChineseFont}"
                              Foreground="White"
                              VerticalAlignment="Center"
                              Margin="10,0,0,0"
