@@ -12,7 +12,6 @@ using Forms = System.Windows.Forms;
 using TagLib;
 using System.Windows.Media.Imaging;
 using System.Diagnostics;
-using WinForms = System.Windows.Forms;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -21,7 +20,6 @@ using System.Windows.Data;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 
 namespace WpfApp3
 {
@@ -147,7 +145,7 @@ namespace WpfApp3
         {
             var dialog = new Forms.FolderBrowserDialog
             {
-                Description = "选择音乐文件夹"
+                Description = "选择音乐���件夹"
             };
 
             if (dialog.ShowDialog() == Forms.DialogResult.OK)
@@ -296,7 +294,7 @@ namespace WpfApp3
                 Debug.WriteLine($"\n封面信息:");
                 if (currentTagFile.Tag.Pictures != null)
                 {
-                    Debug.WriteLine($"Pictures数组长度: {currentTagFile.Tag.Pictures.Length}");
+                    Debug.WriteLine($"Pictures组长度: {currentTagFile.Tag.Pictures.Length}");
                     
                     if (currentTagFile.Tag.Pictures.Length > 0)
                     {
@@ -317,12 +315,12 @@ namespace WpfApp3
                                 albumArt.CacheOption = BitmapCacheOption.OnLoad;
                                 albumArt.StreamSource = ms;
                                 albumArt.EndInit();
-                                albumArt.Freeze(); // 使图片可以跨线程使用
+                                albumArt.Freeze(); // 使图片可程使用
 
                                 Debug.WriteLine($"BitmapImage创建成功:");
                                 Debug.WriteLine($"- 宽度: {albumArt.Width}");
                                 Debug.WriteLine($"- 高度: {albumArt.Height}");
-                                Debug.WriteLine($"- 像��宽度: {albumArt.PixelWidth}");
+                                Debug.WriteLine($"- 像宽度: {albumArt.PixelWidth}");
                                 Debug.WriteLine($"- 像素高度: {albumArt.PixelHeight}");
 
                                 currentAlbumArt = albumArt;
@@ -370,7 +368,7 @@ namespace WpfApp3
                 Debug.WriteLine($"异常信息: {ex.Message}");
                 Debug.WriteLine($"堆栈跟踪: {ex.StackTrace}");
                 
-                System.Windows.MessageBox.Show($"读取音乐文件元数据时出错: {ex.Message}");
+                System.Windows.MessageBox.Show($"读取音乐文件元数据时出��: {ex.Message}");
                 
                 currentAlbumArt = null;
                 UpdateAlbumArt(null);
@@ -420,6 +418,16 @@ namespace WpfApp3
                         Debug.WriteLine($"AlbumArtImage实际尺寸: {AlbumArtImage.ActualWidth} x {AlbumArtImage.ActualHeight}");
                         Debug.WriteLine($"AlbumArtImage期望尺寸: {AlbumArtImage.Width} x {AlbumArtImage.Height}");
                         Debug.WriteLine($"父容器Border尺寸: {((Border)AlbumArtImage.Parent).ActualWidth} x {((Border)AlbumArtImage.Parent).ActualHeight}");
+                        
+                        // 应用颜色方案
+                        if (albumArt != null)
+                        {
+                            ApplyColorSchemeFromAlbumArt(albumArt);
+                        }
+                        else
+                        {
+                            ResetColorSchemeToDefault();
+                        }
                     }));
                 });
             }
@@ -493,7 +501,7 @@ namespace WpfApp3
                     double deltaX = currentMousePosition.X - _popupOffset.X;
                     double deltaY = currentMousePosition.Y - _popupOffset.Y;
                     
-                    // 更新位置（基于上一次的位置）
+                    // 更新位置（基于上一的位置）
                     _lastHorizontalOffset += deltaX;
                     _lastVerticalOffset += deltaY;
                     _hasCustomPosition = true;
@@ -597,7 +605,7 @@ namespace WpfApp3
                         }
                         else
                         {
-                            Debug.WriteLine("未能解析出有效歌词行");
+                            Debug.WriteLine("未能解析��有效歌词行");
                             // 更新为使用ItemsControl
                             Dispatcher.Invoke(() =>
                             {
@@ -811,24 +819,25 @@ namespace WpfApp3
         {
             double scale = this.ActualHeight / BASE_WINDOW_HEIGHT;
             
+            // 获取资源中的笔刷
+            var normalColorBrush = (SolidColorBrush)this.Resources["LyricTextColor"];
+            var highlightColorBrush = (SolidColorBrush)this.Resources["LyricHighlightColor"];
+
             // 重置所有歌词的样式
             foreach (var line in lyricLines)
             {
                 line.FontSize = BASE_LYRICS_SIZE * scale;
-                line.TextColor = new SolidColorBrush(Colors.Black);
+                line.TextColor = normalColorBrush; // 使用LyricTextColor作为默认歌词颜色
                 line.FontWeight = FontWeights.Normal;
             }
 
             // 设置当前歌词的高亮样式
             currentLyric.FontSize = BASE_CURRENT_LYRICS_SIZE * scale;
-            currentLyric.TextColor = new SolidColorBrush(Colors.Purple);
+            currentLyric.TextColor = highlightColorBrush; // 使用LyricHighlightColor作为高亮歌词颜色
             currentLyric.FontWeight = FontWeights.Bold;
 
             // 更新当前歌词行引用
             currentLyricLine = currentLyric;
-            
-            // 不再需要手动刷新
-            // LyricsItemsControl.Items.Refresh();
         }
 
         private void ScrollToCurrentLyric(LyricLine currentLyric)
@@ -865,7 +874,7 @@ namespace WpfApp3
                                     Duration = TimeSpan.FromMilliseconds(300),
                                    EasingFunction = new QuinticEase 
                                     { 
-                                        EasingMode = EasingMode.EaseInOut  // 使用 EaseInOut 使动画更平滑
+                                        EasingMode = EasingMode.EaseInOut  // 使用 EaseInOut ��动画更平滑
                                     }
                                 };
 
@@ -915,7 +924,7 @@ namespace WpfApp3
 
             public static void AnimateScroll(ScrollViewer scrollViewer, double targetOffset, DoubleAnimation animation)
             {
-                // 如果已经有正在进行的动画，先停止它
+                // 如果已经有在进行的动画，先停止它
                 StopAnimation(scrollViewer);
 
                 double startOffset = scrollViewer.VerticalOffset;
@@ -1031,6 +1040,188 @@ namespace WpfApp3
                 }
             }
         }
+
+        private void ApplyColorSchemeFromAlbumArt(BitmapImage albumArt)
+        {
+            try
+            {
+                Debug.WriteLine("开始从专辑封面提取颜色...");
+
+                // 提取主色调
+                System.Windows.Media.Color dominantColor = ColorExtractionHelper.ExtractDominantColor(albumArt);
+                Debug.WriteLine($"提取到的主色调: R={dominantColor.R}, G={dominantColor.G}, B={dominantColor.B}");
+
+                // 基础背景颜色（更亮，用于对比）
+                System.Windows.Media.Color backgroundColor = ColorExtractionHelper.AdjustColorBrightness(dominantColor, 2.0);
+                double bgLuminance = GetRelativeLuminance(backgroundColor);
+
+                // 初步尝试文本颜色: 若背景较亮则将dominantColor变暗一些
+                double initialFactor = bgLuminance > 0.5 ? 0.5 : 1.5;
+                System.Windows.Media.Color textColor = ColorExtractionHelper.AdjustColorBrightness(dominantColor, initialFactor);
+
+                // 调整文本颜色确保对比
+                textColor = EnsureGoodContrast(textColor, backgroundColor);
+
+                // 在此基础上获取高亮颜色, 稍微偏离 textColor 的亮度，使之清晰
+                double highlightFactor = bgLuminance > 0.5 ? 0.8 : 1.2; // 背景亮则略深，背景暗则略亮
+                System.Windows.Media.Color highlightColor = ColorExtractionHelper.AdjustColorBrightness(dominantColor, highlightFactor);
+                highlightColor = EnsureGoodContrast(highlightColor, backgroundColor);
+
+                // UI高亮色作为按钮和控件的颜色，可稍微调浅一点
+                System.Windows.Media.Color uiHighlightColor = ColorExtractionHelper.AdjustColorBrightness(dominantColor, 1.2);
+
+                Dispatcher.Invoke(() =>
+                {
+                    this.Resources["PrimaryColor"] = new SolidColorBrush(dominantColor);
+                    this.Resources["HighlightColor"] = new SolidColorBrush(uiHighlightColor);
+                    this.Resources["BackgroundColor"] = new SolidColorBrush(backgroundColor);
+                    this.Resources["LyricTextColor"] = new SolidColorBrush(textColor);
+                    this.Resources["LyricHighlightColor"] = new SolidColorBrush(highlightColor);
+
+                    Debug.WriteLine("颜色方案已应用到界面");
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"ApplyColorSchemeFromAlbumArt error: {ex.Message}");
+                ResetColorSchemeToDefault();
+            }
+        }
+
+        // 确保颜色有足够对比度的方法
+        private System.Windows.Media.Color EnsureGoodContrast(System.Windows.Media.Color fgColor, System.Windows.Media.Color bgColor)
+        {
+            int attempts = 0;
+            // 如果对比度不够，就反复调整亮度和饱和度
+            while (!HasGoodContrast(fgColor, bgColor) && attempts < 10)
+            {
+                double luminanceFg = GetRelativeLuminance(fgColor);
+                double luminanceBg = GetRelativeLuminance(bgColor);
+
+                if (luminanceFg > luminanceBg)
+                {
+                    // 前景比背景亮，但对比不够，降低亮度
+                    fgColor = ColorExtractionHelper.AdjustColorBrightness(fgColor, 0.9);
+                }
+                else
+                {
+                    // 前景比背景暗，但不够对比，继续加深
+                    fgColor = ColorExtractionHelper.AdjustColorBrightness(fgColor, 0.9);
+                }
+
+                // 同时提高饱和度
+                fgColor = AdjustColorSaturation(fgColor, 1.1);
+
+                attempts++;
+            }
+            return fgColor;
+        }
+
+        // 计算相对亮度
+        private double GetRelativeLuminance(System.Windows.Media.Color c)
+        {
+            double r = c.R / 255.0;
+            double g = c.G / 255.0;
+            double b = c.B / 255.0;
+
+            r = r <= 0.03928 ? r / 12.92 : Math.Pow((r + 0.055) / 1.055, 2.4);
+            g = g <= 0.03928 ? g / 12.92 : Math.Pow((g + 0.055) / 1.055, 2.4);
+            b = b <= 0.03928 ? b / 12.92 : Math.Pow((b + 0.055) / 1.055, 2.4);
+
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        }
+
+        // 检查对比度是否足够
+        private bool HasGoodContrast(System.Windows.Media.Color fg, System.Windows.Media.Color bg)
+        {
+            double l1 = GetRelativeLuminance(fg);
+            double l2 = GetRelativeLuminance(bg);
+            double contrast = (Math.Max(l1, l2) + 0.05) / (Math.Min(l1, l2) + 0.05);
+            return contrast >= 4.5; // WCAG标准
+        }
+
+        // 调整颜色饱和度
+        private System.Windows.Media.Color AdjustColorSaturation(System.Windows.Media.Color color, double factor)
+        {
+            var hsv = RgbToHsv(color.R, color.G, color.B);
+            hsv.S = Math.Min(1.0, hsv.S * factor);
+            var rgb = HsvToRgb(hsv.H, hsv.S, hsv.V);
+            return System.Windows.Media.Color.FromRgb(rgb.r, rgb.g, rgb.b);
+        }
+
+        // RGB转HSV
+        private (double H, double S, double V) RgbToHsv(byte r, byte g, byte b)
+        {
+            double rf = r / 255.0;
+            double gf = g / 255.0;
+            double bf = b / 255.0;
+
+            double max = Math.Max(rf, Math.Max(gf, bf));
+            double min = Math.Min(rf, Math.Min(gf, bf));
+            double delta = max - min;
+
+            double h = 0.0;
+            if (delta > 0)
+            {
+                if (max == rf)
+                    h = (gf - bf) / delta + (gf < bf ? 6 : 0);
+                else if (max == gf)
+                    h = (bf - rf) / delta + 2;
+                else
+                    h = (rf - gf) / delta + 4;
+                h /= 6;
+            }
+
+            double s = max == 0 ? 0 : delta / max;
+            double v = max;
+
+            return (h, s, v);
+        }
+
+        // HSV转RGB
+        private (byte r, byte g, byte b) HsvToRgb(double h, double s, double v)
+        {
+            double r, g, b;
+            if (s == 0.0)
+            {
+                r = g = b = v;
+            }
+            else
+            {
+                h = h * 6.0;
+                int i = (int)Math.Floor(h);
+                double f = h - i;
+                double p = v * (1.0 - s);
+                double q = v * (1.0 - s * f);
+                double t = v * (1.0 - s * (1.0 - f));
+                switch (i)
+                {
+                    case 0: r = v; g = t; b = p; break;
+                    case 1: r = q; g = v; b = p; break;
+                    case 2: r = p; g = v; b = t; break;
+                    case 3: r = p; g = q; b = v; break;
+                    case 4: r = t; g = p; b = v; break;
+                    default: r = v; g = p; b = q; break;
+                }
+            }
+
+            return ((byte)(r * 255), (byte)(g * 255), (byte)(b * 255));
+        }
+
+        private void ResetColorSchemeToDefault()
+        {
+            Debug.WriteLine("重置为默认颜色方案");
+            
+            Dispatcher.Invoke(() =>
+            {
+                var defaultPrimaryColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FF673AB7");
+                this.Resources["PrimaryColor"] = new SolidColorBrush(defaultPrimaryColor);
+                this.Resources["HighlightColor"] = new SolidColorBrush(defaultPrimaryColor);
+                this.Resources["LyricTextColor"] = new SolidColorBrush(System.Windows.Media.Colors.Black);
+                this.Resources["BackgroundColor"] = new SolidColorBrush(System.Windows.Media.Colors.White);
+                this.Resources["LyricHighlightColor"] = new SolidColorBrush(System.Windows.Media.Colors.Purple);
+            });
+        }
     }
 
     // 添加歌词行类
@@ -1122,7 +1313,17 @@ namespace WpfApp3
             Translation = translation;
             Time = time;
             FontSize = 20;
-            TextColor = new SolidColorBrush(Colors.Black);
+            
+            // 尝试从资源获取默认文本颜色，如果获取失败则使用黑色
+            if (System.Windows.Application.Current.MainWindow?.Resources["LyricTextColor"] is SolidColorBrush defaultBrush)
+            {
+                TextColor = defaultBrush;
+            }
+            else
+            {
+                TextColor = new SolidColorBrush(System.Windows.Media.Colors.Black);
+            }
+            
             FontWeight = FontWeights.Normal;
         }
 
@@ -1156,6 +1357,94 @@ namespace WpfApp3
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
+        }
+    }
+
+    public static class ColorExtractionHelper 
+    {
+        /// <summary>
+        /// 从 BitmapSource 中提取主色调
+        /// </summary>
+        public static System.Windows.Media.Color ExtractDominantColor(BitmapSource bitmap, int sampleCount = 1000)
+        {
+            if (bitmap == null) return System.Windows.Media.Colors.Gray;
+
+            try
+            {
+                // 将图像转换为FormatConvertedBitmap以确保格式一致
+                FormatConvertedBitmap formatConvertedBitmap = new FormatConvertedBitmap();
+                formatConvertedBitmap.BeginInit();
+                formatConvertedBitmap.Source = bitmap;
+                formatConvertedBitmap.DestinationFormat = PixelFormats.Bgra32;
+                formatConvertedBitmap.EndInit();
+
+                int width = formatConvertedBitmap.PixelWidth;
+                int height = formatConvertedBitmap.PixelHeight;
+                int stride = width * 4; // 4 bytes per pixel for BGRA32
+                byte[] pixels = new byte[height * stride];
+                formatConvertedBitmap.CopyPixels(pixels, stride, 0);
+
+                // 随机抽样像素
+                Random rand = new Random();
+                long totalR = 0, totalG = 0, totalB = 0;
+                int validSamples = 0;
+
+                for (int i = 0; i < sampleCount && i < (width * height); i++)
+                {
+                    int x = rand.Next(width);
+                    int y = rand.Next(height);
+                    int index = y * stride + x * 4;
+
+                    if ((index + 3) < pixels.Length) // 确保不会越界
+                    {
+                        byte b = pixels[index];
+                        byte g = pixels[index + 1];
+                        byte r = pixels[index + 2];
+                        byte a = pixels[index + 3];
+
+                        if (a > 50) // 只统计透明度较高的像素
+                        {
+                            totalR += r;
+                            totalG += g;
+                            totalB += b;
+                            validSamples++;
+                        }
+                    }
+                }
+
+                if (validSamples == 0) return System.Windows.Media.Colors.Gray;
+
+                byte avgR = (byte)(totalR / validSamples);
+                byte avgG = (byte)(totalG / validSamples);
+                byte avgB = (byte)(totalB / validSamples);
+
+                return System.Windows.Media.Color.FromRgb(avgR, avgG, avgB);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"ExtractDominantColor error: {ex.Message}");
+                return System.Windows.Media.Colors.Gray;
+            }
+        }
+
+        /// <summary>
+        /// 计算给定颜色的对比色
+        /// </summary>
+        public static System.Windows.Media.Color GetContrastingColor(System.Windows.Media.Color baseColor)
+        {
+            double luminance = (0.299 * baseColor.R + 0.587 * baseColor.G + 0.114 * baseColor.B) / 255;
+            return luminance > 0.5 ? System.Windows.Media.Colors.Black : System.Windows.Media.Colors.White;
+        }
+
+        /// <summary>
+        /// 调整颜色亮度
+        /// </summary>
+        public static System.Windows.Media.Color AdjustColorBrightness(System.Windows.Media.Color color, double factor)
+        {
+            byte r = (byte)Math.Min(255, color.R * factor);
+            byte g = (byte)Math.Min(255, color.G * factor);
+            byte b = (byte)Math.Min(255, color.B * factor);
+            return System.Windows.Media.Color.FromRgb(r, g, b);
         }
     }
 }

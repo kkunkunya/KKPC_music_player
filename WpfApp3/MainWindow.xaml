@@ -12,14 +12,21 @@
         Width="800">
     
     <Window.Resources>
+        <!-- 修改原有的静态颜色资源为动态颜色资源 -->
+        <SolidColorBrush x:Key="PrimaryColor" Color="#FF673AB7"/>
+        <SolidColorBrush x:Key="HighlightColor" Color="#FF673AB7"/>
+        <SolidColorBrush x:Key="LyricTextColor" Color="Black"/>
+        <SolidColorBrush x:Key="BackgroundColor" Color="White"/>
+        <SolidColorBrush x:Key="LyricHighlightColor" Color="Purple"/>
+        
         <!-- 普通按钮样式 -->
         <Style x:Key="PlayerButton" TargetType="Button">
             <Setter Property="Width" Value="36"/>
             <Setter Property="Height" Value="36"/>
             <Setter Property="Margin" Value="8"/>
-            <Setter Property="Background" Value="#FF673AB7"/>
+            <Setter Property="Background" Value="{DynamicResource HighlightColor}"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#FF673AB7"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryColor}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -126,19 +133,20 @@
                          FontWeight="Bold"
                          FontFamily="{StaticResource ChineseFont}"
                          Margin="0,0,0,10"
-                         Text="未播放"/>
+                         Text="未播放"
+                         Foreground="{DynamicResource LyricTextColor}"/>
                 
                 <TextBlock x:Name="ArtistTextBlock"
                          FontSize="18"
                          FontFamily="{StaticResource ChineseFont}"
                          Margin="0,0,0,5"
-                         Foreground="#666666"
+                         Foreground="{DynamicResource LyricTextColor}"
                          Text="未知艺人"/>
                 
                 <TextBlock x:Name="AlbumTextBlock"
                          FontSize="16"
                          FontFamily="{StaticResource ChineseFont}"
-                         Foreground="#888888"
+                         Foreground="{DynamicResource LyricTextColor}"
                          Text="未知专辑"/>
             </StackPanel>
         </Grid>
