@@ -46,6 +46,7 @@ namespace WpfApp3
         private const double BASE_WINDOW_HEIGHT = 700; // 基准窗口高度
         private const double BASE_LYRICS_SIZE = 20;    // 基准歌词大小
         private const double BASE_CURRENT_LYRICS_SIZE = 24; // 基准当前歌词大小
+        private bool isUserDraggingSlider = false;
 
         public MainWindow()
         {
@@ -53,6 +54,9 @@ namespace WpfApp3
             InitializePlayer();
             InitializePlaylistPopup();
             InitializeLyricsTimer();
+            
+            // 订阅MediaOpened事件
+            mediaPlayer.MediaOpened += MediaPlayer_MediaOpened;
             
             // 添加窗口大小改变事件处理
             SizeChanged += MainWindow_SizeChanged;
@@ -85,9 +89,9 @@ namespace WpfApp3
 
         private void Timer_Tick(object sender, EventArgs e)
         {
-            if (mediaPlayer.Source != null && mediaPlayer.NaturalDuration.HasTimeSpan)
+            if (mediaPlayer.Source != null && mediaPlayer.NaturalDuration.HasTimeSpan && !isUserDraggingSlider)
             {
-                ProgressSlider.Value = (mediaPlayer.Position.TotalSeconds / mediaPlayer.NaturalDuration.TimeSpan.TotalSeconds) * 100;
+                ProgressSlider.Value = mediaPlayer.Position.TotalSeconds;
             }
         }
 
@@ -100,6 +104,8 @@ namespace WpfApp3
             if (!isPlaying)
             {
                 mediaPlayer.Stop();
+                timer.Stop();
+                lyricsTimer.Stop();
                 ProgressSlider.Value = 0;
                 PlayIcon.Text = "\uE768"; // 播放图标
             }
@@ -145,7 +151,7 @@ namespace WpfApp3
         {
             var dialog = new Forms.FolderBrowserDialog
             {
-                Description = "选择音乐���件夹"
+                Description = "选择音乐文件夹"
             };
 
             if (dialog.ShowDialog() == Forms.DialogResult.OK)
@@ -245,22 +251,17 @@ namespace WpfApp3
             {
                 string filePath = PlayList.SelectedItem.ToString();
                 
-                // 添加调试输出
                 Debug.WriteLine($"准备播放文件: {filePath}");
                 
-                // 加载并显示元数据
                 LoadMusicMetadata(filePath);
-                
-                // 加载歌词
                 LoadLyrics(filePath);
 
-                // 播放音乐
                 mediaPlayer.Open(new Uri(filePath));
-                mediaPlayer.Play();
-                timer.Start();
-                lyricsTimer.Start();
                 isPlaying = true;
                 PlayIcon.Text = "\uE769"; // 暂停图标
+
+                // 重置进度条
+                ProgressSlider.Value = 0;
             }
         }
 
@@ -368,7 +369,7 @@ namespace WpfApp3
                 Debug.WriteLine($"异常信息: {ex.Message}");
                 Debug.WriteLine($"堆栈跟踪: {ex.StackTrace}");
                 
-                System.Windows.MessageBox.Show($"读取音乐文件元数据时出��: {ex.Message}");
+                System.Windows.MessageBox.Show($"读取音乐文件元数据时出错: {ex.Message}");
                 
                 currentAlbumArt = null;
                 UpdateAlbumArt(null);
@@ -605,7 +606,7 @@ namespace WpfApp3
                         }
                         else
                         {
-                            Debug.WriteLine("未能解析��有效歌词行");
+                            Debug.WriteLine("未能解析有效歌词行");
                             // 更新为使用ItemsControl
                             Dispatcher.Invoke(() =>
                             {
@@ -747,7 +748,7 @@ namespace WpfApp3
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"解析歌词行出错: {ex.Message}");
+                Debug.WriteLine($"解析歌词行���错: {ex.Message}");
             }
 
             return false;
@@ -819,7 +820,7 @@ namespace WpfApp3
         {
             double scale = this.ActualHeight / BASE_WINDOW_HEIGHT;
             
-            // 获取资源中的笔刷
+            // 获取资源中的笔
             var normalColorBrush = (SolidColorBrush)this.Resources["LyricTextColor"];
             var highlightColorBrush = (SolidColorBrush)this.Resources["LyricHighlightColor"];
 
@@ -874,7 +875,7 @@ namespace WpfApp3
                                     Duration = TimeSpan.FromMilliseconds(300),
                                    EasingFunction = new QuinticEase 
                                     { 
-                                        EasingMode = EasingMode.EaseInOut  // 使用 EaseInOut ��动画更平滑
+                                        EasingMode = EasingMode.EaseInOut  // 使用 EaseInOut 动画更平滑
                                     }
                                 };
 
@@ -1100,7 +1101,7 @@ namespace WpfApp3
 
                 if (luminanceFg > luminanceBg)
                 {
-                    // 前景比背景亮，但对比不够，降低亮度
+                    // 前景比��景亮，但对比不够，降低亮度
                     fgColor = ColorExtractionHelper.AdjustColorBrightness(fgColor, 0.9);
                 }
                 else
@@ -1221,6 +1222,52 @@ namespace WpfApp3
                 this.Resources["BackgroundColor"] = new SolidColorBrush(System.Windows.Media.Colors.White);
                 this.Resources["LyricHighlightColor"] = new SolidColorBrush(System.Windows.Media.Colors.Purple);
             });
+        }
+
+        // 添加MediaOpened事件处理
+        private void MediaPlayer_MediaOpened(object sender, EventArgs e)
+        {
+            if (mediaPlayer.NaturalDuration.HasTimeSpan)
+            {
+                ProgressSlider.Maximum = mediaPlayer.NaturalDuration.TimeSpan.TotalSeconds;
+            }
+            else
+            {
+                ProgressSlider.Maximum = 100;
+            }
+
+            if (isPlaying)
+            {
+                mediaPlayer.Play();
+                timer.Start();
+                lyricsTimer.Start();
+            }
+
+            ProgressSlider.Value = 0;
+        }
+
+        // 添加进度条拖拽事件处理
+        private void ProgressSlider_DragStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e)
+        {
+            isUserDraggingSlider = true;
+        }
+
+        private void ProgressSlider_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+        {
+            isUserDraggingSlider = false;
+            if (mediaPlayer.Source != null)
+            {
+                mediaPlayer.Position = TimeSpan.FromSeconds(ProgressSlider.Value);
+            }
+        }
+
+        private void ProgressSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (!isUserDraggingSlider && mediaPlayer.Source != null && mediaPlayer.NaturalDuration.HasTimeSpan)
+            {
+                // 如果不是拖拽导致的值变化（比如点击进度条），也更新播放位置
+                mediaPlayer.Position = TimeSpan.FromSeconds(ProgressSlider.Value);
+            }
         }
     }
 

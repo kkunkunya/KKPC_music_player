@@ -223,7 +223,11 @@
                 Margin="20,5"
                 Minimum="0" 
                 Maximum="100" 
-                Value="0"/>
+                Value="0"
+                IsMoveToPointEnabled="True"
+                Thumb.DragStarted="ProgressSlider_DragStarted"
+                Thumb.DragCompleted="ProgressSlider_DragCompleted"
+                ValueChanged="ProgressSlider_ValueChanged"/>
 
         <!-- 控制按钮区域 -->
         <StackPanel Grid.Row="3" 
