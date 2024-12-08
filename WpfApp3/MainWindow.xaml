@@ -274,6 +274,14 @@
                            FontFamily="Segoe MDL2 Assets"
                            FontSize="14"/>
             </Button>
+            
+            <Button x:Name="IslandButton" 
+                    Style="{StaticResource PlayerButton}"
+                    Click="IslandButton_Click">
+                <TextBlock Text="&#xE7C4;"
+                           FontFamily="Segoe MDL2 Assets"
+                           FontSize="14"/>
+            </Button>
         </StackPanel>
 
         <!-- 播放列表弹出窗口 -->

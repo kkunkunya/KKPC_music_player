@@ -1,0 +1,67 @@
+<Window x:Class="WpfApp3.LyricIslandWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        Width="400"
+        Height="100"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+    
+    <Window.Resources>
+        <FontFamily x:Key="ChineseFont">Microsoft YaHei UI, PingFang SC, SimHei</FontFamily>
+    </Window.Resources>
+    
+    <Border Background="#CC000000" 
+            CornerRadius="20" 
+            Padding="20,10"
+            MouseEnter="Border_MouseEnter"
+            MouseLeave="Border_MouseLeave">
+        <Grid>
+            <StackPanel HorizontalAlignment="Center" 
+                        VerticalAlignment="Center"
+                        Margin="0,5">
+                <TextBlock x:Name="MainLyricTextBlock"
+                          Foreground="White"
+                          FontFamily="{StaticResource ChineseFont}"
+                          FontSize="20"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Center"
+                          TextAlignment="Center"
+                          TextWrapping="Wrap"
+                          TextTrimming="CharacterEllipsis"
+                          Margin="0,0,0,4"/>
+                
+                <TextBlock x:Name="TranslationLyricTextBlock"
+                          Foreground="#E6FFFFFF"
+                          FontFamily="{StaticResource ChineseFont}"
+                          FontSize="14"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Center"
+                          TextAlignment="Center"
+                          TextWrapping="Wrap"
+                          TextTrimming="CharacterEllipsis"
+                          Visibility="Collapsed"/>
+            </StackPanel>
+            
+            <Button x:Name="CloseButton"
+                    Width="24"
+                    Height="24"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Margin="0,-2,-8,0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Visibility="Collapsed"
+                    Click="CloseButton_Click">
+                <TextBlock Text="&#xE8BB;"
+                         FontFamily="Segoe MDL2 Assets"
+                         Foreground="White"
+                         FontSize="12"/>
+            </Button>
+        </Grid>
+    </Border>
+</Window> 

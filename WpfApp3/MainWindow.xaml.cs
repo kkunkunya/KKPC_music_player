@@ -47,6 +47,8 @@ namespace WpfApp3
         private const double BASE_LYRICS_SIZE = 20;    // 基准歌词大小
         private const double BASE_CURRENT_LYRICS_SIZE = 24; // 基准当前歌词大小
         private bool isUserDraggingSlider = false;
+        private LyricIslandWindow lyricIslandWindow;
+        private bool isIslandVisible = false;
 
         public MainWindow()
         {
@@ -221,7 +223,7 @@ namespace WpfApp3
             }
             else if (currentIndex == 0)
             {
-                // 如果是第一首，则循环到最后一首
+                // 如果是第一首，则循环到最���一首
                 PlayList.SelectedIndex = PlayList.Items.Count - 1;
                 PlaySelectedSong();
             }
@@ -582,7 +584,7 @@ namespace WpfApp3
                         Debug.WriteLine("从通用Lyrics标签中找到歌词");
                     }
                     
-                    // 尝试从FLAC注释中获取歌词
+                    // ���试从FLAC注释中获取歌词
                     if (string.IsNullOrEmpty(lyricsText) && currentTagFile.Tag.Comment != null)
                     {
                         // 有些音乐文件可能在Comment字段中存储歌词
@@ -748,7 +750,7 @@ namespace WpfApp3
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"解析歌词行���错: {ex.Message}");
+                Debug.WriteLine($"解析歌词行错: {ex.Message}");
             }
 
             return false;
@@ -839,6 +841,15 @@ namespace WpfApp3
 
             // 更新当前歌词行引用
             currentLyricLine = currentLyric;
+
+            // 更新灵动岛歌词
+            if (isIslandVisible && lyricIslandWindow != null)
+            {
+                lyricIslandWindow.UpdateLyric(
+                    currentLyric.Text, 
+                    string.IsNullOrEmpty(currentLyric.Translation) ? null : currentLyric.Translation
+                );
+            }
         }
 
         private void ScrollToCurrentLyric(LyricLine currentLyric)
@@ -1101,7 +1112,7 @@ namespace WpfApp3
 
                 if (luminanceFg > luminanceBg)
                 {
-                    // 前景比��景亮，但对比不够，降低亮度
+                    // 前景比背景亮，但对比不够，降低亮度
                     fgColor = ColorExtractionHelper.AdjustColorBrightness(fgColor, 0.9);
                 }
                 else
@@ -1267,6 +1278,47 @@ namespace WpfApp3
             {
                 // 如果不是拖拽导致的值变化（比如点击进度条），也更新播放位置
                 mediaPlayer.Position = TimeSpan.FromSeconds(ProgressSlider.Value);
+            }
+        }
+
+        // 添加灵动岛按钮点击事件处理
+        private void IslandButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (lyricIslandWindow == null)
+            {
+                lyricIslandWindow = new LyricIslandWindow();
+                lyricIslandWindow.IslandClosed += (s, args) =>
+                {
+                    isIslandVisible = false;
+                    lyricIslandWindow = null;
+                };
+            }
+
+            if (!isIslandVisible)
+            {
+                lyricIslandWindow.Show();
+                isIslandVisible = true;
+                
+                // 如果当前有歌词在播放，立即更新灵动岛
+                if (currentLyricLine != null)
+                {
+                    lyricIslandWindow.UpdateLyric(currentLyricLine.Text);
+                }
+            }
+            else
+            {
+                lyricIslandWindow.Hide();
+                isIslandVisible = false;
+            }
+        }
+
+        // 在MainWindow的关闭事件中关闭灵动岛
+        protected override void OnClosed(EventArgs e)
+        {
+            base.OnClosed(e);
+            if (lyricIslandWindow != null)
+            {
+                lyricIslandWindow.Close();
             }
         }
     }
